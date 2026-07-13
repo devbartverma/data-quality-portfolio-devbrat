@@ -50,6 +50,11 @@ validate-silver:  test-silver
 validate-gold:    test-gold
 validate-all:     test
 
+# ── DuckDB live SQL demo ───────────────────────────────────────────────
+demo:
+	@echo "▶ Running live SQL validation demo (DuckDB — no database required)..."
+	$(PYTHON) sql/demo/run_validations.py
+
 # ── Great Expectations ────────────────────────────────────────────────
 ge-validate:
 	@echo "▶ Validating GE expectation suite JSON syntax..."

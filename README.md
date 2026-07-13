@@ -1,5 +1,7 @@
 # Data Quality — Python / Great Expectations / DBT / T-SQL
 
+[![CI](https://github.com/devbartverma/data-quality-portfolio-devbrat/actions/workflows/data-quality.yml/badge.svg)](https://github.com/devbartverma/data-quality-portfolio-devbrat/actions)
+
 Enterprise data quality testing framework for an aircraft parts manufacturing supply chain.
 Validates a full medallion pipeline (Bronze → Silver → Gold) using Great Expectations expectation
 suites, DBT schema and singular tests, Python validator classes with pytest, and T-SQL validation
@@ -90,6 +92,9 @@ make ge-validate
 # Generate GE Data Docs HTML quality report
 make ge-docs
 ```
+
+# Run the live SQL demo (DuckDB — no database server required)
+make demo
 
 Or call pytest directly:
 

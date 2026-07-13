@@ -1,0 +1,81 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw ingested data from ERP_SAP and legacy source systems"
+    database: "{{ env_var('DW_DATABASE', 'aero_dw') }}"
+    schema: bronze
+    tables:
+      - name: suppliers_raw
+        description: "Raw supplier master data from ERP_SAP — not yet validated or cleansed"
+        columns:
+          - name: supplier_id
+            description: "Unique supplier identifier from source system"
+            tests:
+              - not_null
+              - unique
+          - name: supplier_name
+            description: "Supplier legal name — may contain whitespace padding in raw feed"
+            tests:
+              - not_null
+          - name: status
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["ACTIVE", "INACTIVE", "PROBATION", "SUSPENDED"]
+          - name: payment_terms
+            tests:
+              - accepted_values:
+                  values: ["NET30", "NET45", "NET60", "NET90"]
+                  config:
+                    severity: warn
+          - name: quality_rating
+            tests:
+              - not_null
+          - name: source_system
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["ERP_SAP", "LEGACY_SYSTEM", "MDM_PROFISEE", "MANUAL_ENTRY"]
+
+      - name: parts_catalog_raw
+        description: "Raw aircraft parts catalog from ERP_SAP"
+        columns:
+          - name: part_id
+            tests:
+              - not_null
+              - unique
+          - name: part_number
+            tests:
+              - not_null
+          - name: part_category
+            tests:
+              - accepted_values:
+                  values:
+                    - AVIONICS
+                    - PROPULSION
+                    - AIRFRAME
+                    - LANDING_GEAR
+                    - HYDRAULIC
+                    - ELECTRICAL
+                    - INTERIOR
+                    - SAFETY
+          - name: unit_of_measure
+            tests:
+              - accepted_values:
+                  values: ["EA", "SET", "KIT", "LB", "FT", "IN"]
+
+      - name: work_orders_raw
+        description: "Raw procurement work orders from ERP_SAP"
+        columns:
+          - name: work_order_id
+            tests:
+              - not_null
+              - unique
+          - name: part_id
+            tests:
+              - not_null
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ["OPEN", "CLOSED", "PARTIAL", "CANCELLED"]

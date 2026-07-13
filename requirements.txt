@@ -1,0 +1,17 @@
+# Core data validation
+pandas==2.2.*
+numpy==1.26.*
+
+# Great Expectations (file-based, no database required)
+great-expectations==0.18.*
+
+# DBT (demo — no adapter needed for schema validation)
+dbt-core==1.7.*
+
+# Testing
+pytest==8.3.*
+pytest-html==4.1.*
+
+# Utilities
+tabulate==0.9.*
+pyyaml==6.0.*

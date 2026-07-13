@@ -1,0 +1,94 @@
+{
+  "expectation_suite_name": "bronze_parts_suite",
+  "ge_cloud_id": null,
+  "data_asset_type": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "layer": "bronze",
+    "domain": "parts_catalog",
+    "owner": "data-quality-team",
+    "known_issues": [
+      "PART026: negative unit_price — legacy migration (JIRA: DQ-137)",
+      "PART027: null supplier_id — MDM onboarding pending (JIRA: DQ-155)",
+      "PART028: blank part_name — ERP extract bug (JIRA: DQ-142)",
+      "PART030: orphaned supplier SUPXXX (JIRA: DQ-160)"
+    ]
+  },
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": { "min_value": 25, "max_value": 500 },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "part_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": { "column": "part_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "part_number" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "part_name",
+        "mostly": 0.95
+      },
+      "meta": { "notes": "5% tolerance for ERP extract truncation bug (JIRA: DQ-142)" }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "part_category",
+        "value_set": [
+          "AVIONICS", "PROPULSION", "AIRFRAME", "LANDING_GEAR",
+          "HYDRAULIC", "ELECTRICAL", "INTERIOR", "SAFETY"
+        ]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "unit_price",
+        "min_value": 0.01,
+        "mostly": 0.97
+      },
+      "meta": {
+        "notes": "3% tolerance for known negative price migration issue (JIRA: DQ-137)"
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "lead_time_days",
+        "min_value": 1,
+        "max_value": 365
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "unit_of_measure",
+        "value_set": ["EA", "SET", "KIT", "LB", "FT", "IN"]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_strftime_format",
+      "kwargs": {
+        "column": "created_date",
+        "strftime_format": "%Y-%m-%d"
+      },
+      "meta": {}
+    }
+  ]
+}

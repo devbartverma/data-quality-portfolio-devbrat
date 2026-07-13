@@ -1,0 +1,105 @@
+{
+  "expectation_suite_name": "silver_suppliers_suite",
+  "ge_cloud_id": null,
+  "data_asset_type": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "layer": "silver",
+    "domain": "suppliers",
+    "owner": "data-quality-team",
+    "purpose": "Hard gate — all expectations must pass at 100% before Gold aggregation runs."
+  },
+  "expectations": [
+    {
+      "expectation_type": "expect_table_columns_to_match_set",
+      "kwargs": {
+        "column_set": [
+          "supplier_id", "supplier_name", "country", "email", "phone",
+          "contract_start_date", "payment_terms", "quality_rating",
+          "status", "source_system", "load_timestamp", "dq_load_date"
+        ],
+        "exact_match": true
+      },
+      "meta": { "notes": "Silver schema must be exact — no extra columns allowed" }
+    },
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": { "min_value": 14, "max_value": 16 },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "supplier_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": { "column": "supplier_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "supplier_name" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "email" },
+      "meta": { "notes": "Silver requires 100% email coverage — bronze nulls must be remediated" }
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "email",
+        "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "status",
+        "value_set": ["ACTIVE", "INACTIVE", "PROBATION", "SUSPENDED"]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "payment_terms",
+        "value_set": ["NET30", "NET45", "NET60", "NET90"]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "country",
+        "value_set": ["US", "FR", "GB", "CA", "DE", "JP", "AU"]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "quality_rating",
+        "min_value": 1.0,
+        "max_value": 5.0
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_strftime_format",
+      "kwargs": {
+        "column": "contract_start_date",
+        "strftime_format": "%Y-%m-%d"
+      },
+      "meta": { "notes": "Bronze DD/MM/YYYY dates must be normalised in cleansing" }
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "dq_load_date" },
+      "meta": { "notes": "dq_load_date added by cleansing pipeline for audit trail" }
+    }
+  ]
+}

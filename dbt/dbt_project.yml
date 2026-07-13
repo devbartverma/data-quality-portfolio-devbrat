@@ -1,0 +1,33 @@
+name: aero_parts_pipeline
+version: "1.0.0"
+config-version: 2
+
+profile: aero_parts_pipeline
+
+model-paths: ["models"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  aero_parts_pipeline:
+    bronze:
+      +schema: bronze
+      +materialized: view
+      +tags: ["bronze", "raw"]
+    silver:
+      +schema: silver
+      +materialized: table
+      +tags: ["silver", "cleansed"]
+    gold:
+      +schema: gold
+      +materialized: table
+      +tags: ["gold", "curated"]
+
+vars:
+  dq_slack_webhook: "{{ env_var('SLACK_WEBHOOK_URL', '') }}"
+  max_null_rate_bronze: 0.10
+  max_null_rate_silver: 0.00

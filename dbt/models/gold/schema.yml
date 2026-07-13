@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: gold_production_metrics
+    description: >
+      Monthly production and procurement KPI aggregations by supplier.
+      Powers the executive quality scorecard and supplier performance dashboards.
+      Failures at this layer block dashboard refresh.
+    columns:
+      - name: metric_month
+        description: "Reporting month in YYYY-MM format"
+        tests:
+          - not_null
+      - name: supplier_id
+        description: "Foreign key to silver_suppliers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_suppliers')
+              field: supplier_id
+      - name: supplier_name
+        tests:
+          - not_null
+      - name: total_orders
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: total_parts_ordered
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: total_parts_received
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: total_spend
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: defect_rate_pct
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0 AND defect_rate_pct <= 100"
+      - name: on_time_delivery_pct
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0 AND on_time_delivery_pct <= 100"
+      - name: quality_score
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 1 AND quality_score <= 5"
+      - name: avg_lead_time_days
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: dq_load_date
+        tests:
+          - not_null

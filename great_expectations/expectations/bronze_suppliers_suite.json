@@ -1,0 +1,110 @@
+{
+  "expectation_suite_name": "bronze_suppliers_suite",
+  "ge_cloud_id": null,
+  "data_asset_type": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "layer": "bronze",
+    "domain": "suppliers",
+    "owner": "data-quality-team",
+    "purpose": "Gate validation before promotion to Silver. Failures generate DQ tickets."
+  },
+  "expectations": [
+    {
+      "expectation_type": "expect_table_columns_to_match_set",
+      "kwargs": {
+        "column_set": [
+          "supplier_id", "supplier_name", "country", "email", "phone",
+          "contract_start_date", "payment_terms", "quality_rating",
+          "status", "source_system", "load_timestamp"
+        ],
+        "exact_match": false
+      },
+      "meta": { "notes": "Allows extra columns from source system" }
+    },
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": { "min_value": 10, "max_value": 1000 },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "supplier_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": { "column": "supplier_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "supplier_name" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "status" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "status",
+        "value_set": ["ACTIVE", "INACTIVE", "PROBATION", "SUSPENDED"]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "payment_terms",
+        "value_set": ["NET30", "NET45", "NET60", "NET90"],
+        "mostly": 0.95
+      },
+      "meta": { "notes": "5% tolerance for legacy payment terms being migrated" }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "quality_rating",
+        "min_value": 1.0,
+        "max_value": 5.0,
+        "mostly": 0.95
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "email",
+        "mostly": 0.90
+      },
+      "meta": {
+        "notes": "Bronze allows 10% null emails. Failing rows trigger remediation (JIRA: DQ-141)."
+      }
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {
+        "column": "email",
+        "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+        "mostly": 0.90
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "source_system" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "source_system",
+        "value_set": ["ERP_SAP", "LEGACY_SYSTEM", "MDM_PROFISEE", "MANUAL_ENTRY"]
+      },
+      "meta": {}
+    }
+  ]
+}

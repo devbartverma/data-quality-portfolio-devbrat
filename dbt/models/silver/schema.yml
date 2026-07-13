@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: silver_suppliers
+    description: >
+      Cleansed and standardised supplier master data. All bronze quality issues
+      (whitespace, date format, null emails, invalid records) must be resolved
+      before a record is promoted to this layer.
+    columns:
+      - name: supplier_id
+        description: "Unique supplier identifier"
+        tests:
+          - not_null
+          - unique
+      - name: supplier_name
+        description: "Supplier legal name — trimmed of whitespace"
+        tests:
+          - not_null
+          - not_empty_string
+      - name: email
+        description: "Procurement contact email — must be 100% populated in silver"
+        tests:
+          - not_null
+      - name: country
+        description: "ISO 2-letter country code"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["US", "FR", "GB", "CA", "DE", "JP", "AU"]
+      - name: status
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["ACTIVE", "INACTIVE", "PROBATION", "SUSPENDED"]
+      - name: payment_terms
+        tests:
+          - accepted_values:
+              values: ["NET30", "NET45", "NET60", "NET90"]
+      - name: dq_load_date
+        description: "Date this record was loaded by the cleansing pipeline — audit field"
+        tests:
+          - not_null
+
+  - name: silver_parts
+    description: >
+      Cleansed aircraft parts catalog. Records with negative prices, missing
+      part names, null supplier references, and orphaned supplier IDs are
+      excluded during silver promotion.
+    columns:
+      - name: part_id
+        tests:
+          - not_null
+          - unique
+      - name: part_name
+        tests:
+          - not_null
+          - not_empty_string
+      - name: part_category
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - AVIONICS
+                - PROPULSION
+                - AIRFRAME
+                - LANDING_GEAR
+                - HYDRAULIC
+                - ELECTRICAL
+                - INTERIOR
+                - SAFETY
+      - name: supplier_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_suppliers')
+              field: supplier_id
+      - name: unit_price
+        description: "Unit price in USD — must be positive in silver"
+        tests:
+          - not_null
+      - name: unit_of_measure
+        tests:
+          - accepted_values:
+              values: ["EA", "SET", "KIT", "LB", "FT", "IN"]
+      - name: dq_load_date
+        tests:
+          - not_null
+
+  - name: silver_work_orders
+    description: "Cleansed work orders — orphaned part_id references excluded"
+    columns:
+      - name: work_order_id
+        tests:
+          - not_null
+          - unique
+      - name: part_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_parts')
+              field: part_id
+      - name: status
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["OPEN", "CLOSED", "PARTIAL", "CANCELLED"]
+      - name: dq_load_date
+        tests:
+          - not_null

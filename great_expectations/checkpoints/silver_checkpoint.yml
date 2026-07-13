@@ -1,0 +1,45 @@
+name: silver_checkpoint
+config_version: 1.0
+class_name: Checkpoint
+run_name_template: "%Y%m%d-%H%M%S-silver-gate"
+
+validations:
+  - batch_request:
+      datasource_name: aero_parts_pipeline
+      data_connector_name: silver_connector
+      data_asset_name: suppliers_cleansed
+    expectation_suite_name: silver_suppliers_suite
+    action_list:
+      - name: store_validation_result
+        action:
+          class_name: StoreValidationResultAction
+      - name: update_data_docs
+        action:
+          class_name: UpdateDataDocsAction
+          site_names: [local_site]
+      - name: send_slack_notification_on_failure
+        action:
+          class_name: SlackNotificationAction
+          slack_webhook: ${SLACK_WEBHOOK_URL}
+          notify_on: failure
+          notify_with: [local_site]
+
+  - batch_request:
+      datasource_name: aero_parts_pipeline
+      data_connector_name: silver_connector
+      data_asset_name: parts_catalog_cleansed
+    expectation_suite_name: silver_parts_suite
+    action_list:
+      - name: store_validation_result
+        action:
+          class_name: StoreValidationResultAction
+      - name: update_data_docs
+        action:
+          class_name: UpdateDataDocsAction
+          site_names: [local_site]
+
+evaluation_parameters: {}
+runtime_configuration:
+  result_format:
+    result_format: COMPLETE
+    include_unexpected_rows: true

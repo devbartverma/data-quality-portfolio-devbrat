@@ -1,0 +1,80 @@
+{
+  "expectation_suite_name": "silver_parts_suite",
+  "ge_cloud_id": null,
+  "data_asset_type": null,
+  "meta": {
+    "great_expectations_version": "0.18.0",
+    "layer": "silver",
+    "domain": "parts_catalog",
+    "owner": "data-quality-team",
+    "purpose": "Hard gate — bad bronze records must be resolved before Silver promotion."
+  },
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": { "min_value": 25, "max_value": 30 },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "part_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": { "column": "part_id" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "part_name" },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "supplier_id" },
+      "meta": { "notes": "All silver parts must reference a valid supplier" }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {
+        "column": "part_category",
+        "value_set": [
+          "AVIONICS", "PROPULSION", "AIRFRAME", "LANDING_GEAR",
+          "HYDRAULIC", "ELECTRICAL", "INTERIOR", "SAFETY"
+        ]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "unit_price",
+        "min_value": 0.01
+      },
+      "meta": { "notes": "Bronze negative price (PART026) must be excluded or corrected" }
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "lead_time_days",
+        "min_value": 1,
+        "max_value": 365
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_strftime_format",
+      "kwargs": {
+        "column": "created_date",
+        "strftime_format": "%Y-%m-%d"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": { "column": "dq_load_date" },
+      "meta": {}
+    }
+  ]
+}

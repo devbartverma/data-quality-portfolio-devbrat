@@ -1,0 +1,17 @@
+supplier_id,supplier_name,country,email,phone,contract_start_date,payment_terms,quality_rating,status,source_system,load_timestamp
+SUP001,Honeywell Aerospace,US,procurement@honeywell.com,+1-602-365-3000,2021-03-15,NET30,4.8,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP002,Collins Aerospace,US,supply@collins.com,+1-860-998-2000,2020-07-01,NET45,4.9,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP003, Parker Hannifin ,US,aerospace@parker.com,+1-216-896-3000,2019-11-20,NET30,4.7,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP004,Safran Group,FR,vendor@safran.com,+33-1-40-60-80-80,15/06/2022,NET60,4.6,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP005,Moog Inc,US,aerospace@moog.com,+1-716-652-2000,2022-02-28,NET30,4.5,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP006,TransDigm Group,US,,+1-216-706-2960,2021-09-10,NET45,4.3,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP007,Ducommun Inc,US,contracts@ducommun.com,+1-657-335-3665,2023-01-05,NET30,4.1,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP008,Heico Corporation,US,procurement@heico.com,+1-954-987-4000,2020-04-18,NET45,4.4,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP009,Kaman Aerospace,US,kaman.supply@kaman.com,+1-860-243-7100,2021-12-01,NET30,4.2,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP010,CIRCOR International,US,supply@circor.com,+1-781-270-1200,2022-06-15,NET60,3.9,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP011,Triumph Group,US,vendor@triumph.com,+1-610-251-1000,2019-08-30,NET30,4.0,PROBATION,ERP_SAP,2024-01-15 06:00:00
+SUP012,Senior Plc,GB,contracts@seniorplc.com,+44-1923-714400,2023-03-22,NET45,4.6,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP013,GKN Aerospace,GB,procurement@gkn.com,+44-121-522-5000,2020-10-14,NET30,4.8,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP014,Magellan Aerospace,CA,supply@magellan.com,+1-905-677-1889,2021-05-07,NET30,4.5,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP015,Boeing Distribution,US,bds@boeing.com,+1-954-538-8000,2018-01-01,NET60,4.9,ACTIVE,ERP_SAP,2024-01-15 06:00:00
+SUP999,Unknown Vendor,XX,,,-999,,,LEGACY_SYSTEM,LEGACY_SYSTEM,2024-01-15 06:00:00

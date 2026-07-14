@@ -79,13 +79,32 @@ ge-docs:
 	great_expectations docs build
 
 # ── DBT ───────────────────────────────────────────────────────────────
-dbt-debug:
-	@echo "▶ DBT debug (connection test)..."
-	cd dbt && dbt debug
+DBT_BIN  := $(shell python3 -m site --user-base)/bin/dbt
+DBT      := cd dbt && $(DBT_BIN)
+DBTFLAGS := --profiles-dir .
+
+dbt-deps:
+	@echo "▶ Installing DBT packages (dbt-utils)..."
+	$(DBT) deps $(DBTFLAGS)
+
+dbt-seed:
+	@echo "▶ Loading seed CSVs into DuckDB..."
+	$(DBT) seed $(DBTFLAGS)
+
+dbt-run:
+	@echo "▶ Building DBT models (Bronze → Silver → Gold)..."
+	$(DBT) run $(DBTFLAGS)
 
 dbt-test:
 	@echo "▶ Running DBT schema + singular tests..."
-	cd dbt && dbt test
+	$(DBT) test $(DBTFLAGS)
+
+dbt-all: dbt-deps dbt-seed dbt-run dbt-test
+	@echo "▶ Full DBT pipeline complete."
+
+dbt-debug:
+	@echo "▶ DBT connection + project check..."
+	$(DBT) debug $(DBTFLAGS)
 
 # ── Cleanup ───────────────────────────────────────────────────────────
 clean:

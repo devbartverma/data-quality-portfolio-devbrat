@@ -5,8 +5,8 @@ numpy==1.26.*
 # Great Expectations (file-based, no database required)
 great-expectations==0.18.*
 
-# DBT (demo — no adapter needed for schema validation)
-dbt-core==1.7.*
+# DBT with DuckDB adapter (runs schema + singular tests locally, no database required)
+dbt-duckdb==1.9.*
 
 # Testing
 pytest==8.3.*

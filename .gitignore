@@ -15,6 +15,8 @@ reports/*.xml
 # DBT
 dbt/target/
 dbt/logs/
+dbt/dbt_packages/
+dbt/*.duckdb
 
 # Great Expectations
 great_expectations/uncommitted/

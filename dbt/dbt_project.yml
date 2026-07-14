@@ -4,10 +4,10 @@ config-version: 2
 
 profile: aero_parts_pipeline
 
-model-paths: ["models"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
+model-paths:  ["models"]
+test-paths:   ["tests"]
+seed-paths:   ["seeds"]
+macro-paths:  ["macros"]
 
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
@@ -26,6 +26,17 @@ models:
       +schema: gold
       +materialized: table
       +tags: ["gold", "curated"]
+
+seeds:
+  aero_parts_pipeline:
+    raw_suppliers:
+      +column_types:
+        quality_rating: varchar       # SUP999 carries 'INACTIVE' due to missing CSV field
+        contract_start_date: varchar  # Mixed formats: ISO, DD/MM/YYYY, -999 sentinel
+        phone: varchar
+    raw_parts:
+      +column_types:
+        spec_revision: varchar
 
 vars:
   dq_slack_webhook: "{{ env_var('SLACK_WEBHOOK_URL', '') }}"

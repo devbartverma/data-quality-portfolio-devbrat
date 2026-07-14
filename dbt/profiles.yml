@@ -1,0 +1,7 @@
+aero_parts_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'aero_dw.duckdb'   # file-based so seed → run → test share state; created in dbt/
+      threads: 4

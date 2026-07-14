@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Pytest
+.pytest_cache/
+reports/*.xml
+
+# DBT
+dbt/target/
+dbt/logs/
+
+# Great Expectations
+great_expectations/uncommitted/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

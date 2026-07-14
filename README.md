@@ -10,7 +10,6 @@ scripts targeting Azure Synapse / SQL Server.
 ## Project Structure
 
 ```
-data-quality-dqa/
 ├── data/
 │   ├── bronze/                          Raw CSV extracts with seeded quality defects
 │   │   ├── suppliers_raw.csv            10 known defects across 16 records
@@ -27,25 +26,28 @@ data-quality-dqa/
 │   ├── models/{bronze,silver,gold}/     schema.yml with column-level tests per layer
 │   └── tests/
 │       ├── generic/not_empty_string.sql Custom reusable generic test macro
-│       └── singular/                   Two SQL tests — return 0 rows on pass
+│       └── singular/                    Two SQL tests — return 0 rows on pass
 ├── src/
 │   ├── utils/data_loader.py             Layer-aware CSV loader
 │   └── validators/
 │       ├── completeness_validator.py    Null rates, row counts, PK uniqueness, whitespace
 │       ├── consistency_validator.py     Accepted values, ranges, date/email format, FK checks
 │       ├── reconciliation_validator.py  Row delta, numeric sum match, critical-row retention
-│       └── statistical_profiler.py     Z-score, IQR bounds, cardinality, data freshness
+│       └── statistical_profiler.py      Z-score, IQR bounds, cardinality, data freshness
 ├── sql/
 │   ├── bronze/                          Completeness and format validation (T-SQL)
 │   ├── silver/                          Referential integrity and business rules (T-SQL)
-│   └── gold/                            Aggregation reconciliation and KPI checks (T-SQL)
+│   ├── gold/                            Aggregation reconciliation and KPI checks (T-SQL)
+│   └── demo/run_validations.py          Live DuckDB demo — runs SQL against CSVs, no DB needed
 ├── tests/
 │   ├── conftest.py                      Session-scoped fixtures — DataFrames loaded once
-│   ├── bronze/                          24 tests — detects and documents known defects
+│   ├── bronze/                          33 tests — detects and documents known defects
 │   ├── silver/                          24 tests — hard gate, all must pass
 │   ├── gold/                            10 tests — KPI validation, blocks dashboard refresh
-│   └── integration/                     8 tests — end-to-end pipeline reconciliation
-├── .github/workflows/data-quality.yml      GitHub Actions CI pipeline
+│   └── integration/                      8 tests — end-to-end pipeline reconciliation
+├── reports/
+│   └── full_dq_report.html              Pre-generated HTML test report — open in browser
+├── .github/workflows/data-quality.yml   GitHub Actions CI pipeline
 ├── Makefile
 ├── pytest.ini
 └── requirements.txt
@@ -53,64 +55,63 @@ data-quality-dqa/
 
 ## Technology Stack
 
-- **Python 3.11+** · **pytest 8.3** · **pandas 2.2**
+- **Python 3.11+** · **pytest 8.3** · **pandas 2.2** · **DuckDB 1.4**
 - **Great Expectations 0.18** — expectation suites, checkpoints, Data Docs
 - **dbt-core 1.7** — schema tests, generic tests, singular SQL tests
 - **T-SQL** — SQL Server 2019 / Azure Synapse Analytics validation scripts
 - **GitHub Actions** — CI pipeline with matrix execution and artifact upload
 
 Defined in [`requirements.txt`](requirements.txt):
-`great-expectations` 0.18 · `dbt-core` 1.7 · `pandas` 2.2 · `pytest` 8.3 · `pytest-html` 4.1
+`great-expectations` 0.18 · `dbt-core` 1.7 · `pandas` 2.2 · `pytest` 8.3 · `pytest-html` 4.1 · `duckdb` 1.4
 
 ## Prerequisites
 
 - Python 3.11 or higher
-- pip
+- pip3
 
 ## Installation
 
 ```bash
-cd data-quality-dqa
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Running Tests
 
 ```bash
 # Run by layer
+make test-bronze      # Bronze gate — 33 tests, intentionally detects dirty data
 make test-silver      # Silver gate — 24 tests, all green (hard pass required)
 make test-gold        # Gold gate  — 10 tests, all green (blocks dashboard refresh)
 make test-integration # E2E reconciliation — 8 tests, all green
-make test-bronze      # Bronze gate — 24 tests, intentionally detects dirty data
 
-# Run the full suite (66 tests)
+# Run the full suite (75 tests)
 make test
 
-# Validate Great Expectations suite JSON files (no database required)
+# Run the live SQL demo (DuckDB — no database server required)
+make demo
+
+# Validate Great Expectations suite JSON files
 make ge-validate
 
 # Generate GE Data Docs HTML quality report
 make ge-docs
 ```
 
-# Run the live SQL demo (DuckDB — no database server required)
-make demo
-
 Or call pytest directly:
 
 ```bash
-pytest tests/ -v                      # full suite
-pytest tests/silver/ -m silver        # silver layer only
-pytest tests/ --html=report.html      # with HTML report
+python3 -m pytest tests/ -v                     # full suite
+python3 -m pytest tests/silver/ -m silver       # silver layer only
+python3 -m pytest tests/ --html=report.html     # with HTML report
 ```
 
-## 🧪 Test Suite — 66 Tests
+## 🧪 Test Suite — 75 Tests
 
 **Domain:** Aero parts procurement pipeline · **Target:** Bronze → Silver → Gold medallion layers
 
 ---
 
-### 🥉 Bronze Layer — `tests/bronze/` — 24 tests
+### 🥉 Bronze Layer — `tests/bronze/` — 33 tests
 
 Bronze tests **detect and document** known defects. Each has a max-allowed violation count tied to a JIRA ticket. Growth beyond that count fails CI and triggers a new remediation task.
 
@@ -148,6 +149,20 @@ Bronze tests **detect and document** known defects. Each has a max-allowed viola
 | `test_supplier_id_null_rate` | Null supplier_id ≤ 5% (PART027: MDM onboarding pending) | PASS — within tolerance |
 | `test_lead_time_iqr_bounds` | Lead times within IQR statistical fence | PASS |
 
+**`test_work_orders_bronze.py`** — 9 tests
+
+| Test | What it checks | Behaviour |
+|---|---|---|
+| `test_required_columns_present` | All 13 source columns present | PASS |
+| `test_pk_is_unique` | `work_order_id` has no duplicates | PASS |
+| `test_row_count_in_expected_range` | Between 40 and 500 work orders | PASS |
+| `test_part_id_no_nulls` | `part_id` never null | PASS |
+| `test_accepted_status_values` | Status only OPEN/CLOSED/PARTIAL/CANCELLED — catches rogue values | PASS |
+| `test_quantity_ordered_positive` | quantity_ordered ≥ 1 | PASS |
+| `test_unit_cost_positive` | unit_cost > 0 | PASS |
+| `test_order_date_format` | ISO-8601 date format | PASS |
+| `test_closed_orders_null_delivery_within_threshold` | CLOSED with null delivery ≤ 1 (WO-2024-050 known) | PASS — within tolerance |
+
 ---
 
 ### 🥈 Silver Layer — `tests/silver/` — 24 tests
@@ -158,17 +173,17 @@ Silver tests **assert** — every test must pass at 100%. Failure blocks the Gol
 
 | Test Class | Tests | Validates |
 |---|---|---|
-| `TestSilverSuppliersCompleteness` | 5 | 12 columns present · PK unique · 0% null on id/name/email (combined) · row count 14–16 · no empty strings |
-| `TestSilverSuppliersConsistency` | 5 | All categorical columns accepted values (combined) · quality_rating 1.0–5.0 · ISO date + no future dates (combined) · valid email regex · no whitespace padding |
-| `TestSilverSuppliersStatistical` | 1 | quality_rating cardinality ≥ 3 · country cardinality 2–20 (combined) |
+| `TestSilverSuppliersCompleteness` | 5 | 12 columns present · PK unique · 0% null on id/name/email · row count 14–16 · no empty strings |
+| `TestSilverSuppliersConsistency` | 5 | All categorical accepted values · quality_rating 1.0–5.0 · ISO date + no future dates · valid email regex · no whitespace padding |
+| `TestSilverSuppliersStatistical` | 1 | quality_rating cardinality ≥ 3 · country cardinality 2–20 |
 
 **`test_parts_silver.py`** — 13 tests
 
 | Test Class | Tests | Validates |
 |---|---|---|
-| `TestSilverPartsCompleteness` | 4 | Required columns · PK unique · 0% null on part_name + supplier_id (combined, PART028/027 resolved) · row count ≥ 25 |
-| `TestSilverPartsConsistency` | 5 | Category/UOM accepted values (combined) · unit_price > 0 (PART026 excluded) · lead time 1–365 · ISO created_date · supplier FK integrity (SUPXXX excluded) |
-| `TestSilverPartsReconciliation` | 3 | Bronze→Silver row drop ≤ 15% · no phantom part_ids introduced · all `is_critical=TRUE` parts retained |
+| `TestSilverPartsCompleteness` | 4 | Required columns · PK unique · 0% null on part_name + supplier_id (PART028/027 resolved) · row count ≥ 25 |
+| `TestSilverPartsConsistency` | 5 | Category/UOM accepted values · unit_price > 0 (PART026 excluded) · lead time 1–365 · ISO created_date · supplier FK integrity (SUPXXX excluded) |
+| `TestSilverPartsReconciliation` | 3 | Bronze→Silver row drop ≤ 15% · no phantom part_ids introduced · all critical parts retained |
 | `TestSilverPartsStatistical` | 1 | part_category cardinality 5–15 |
 
 ---
@@ -179,8 +194,8 @@ Silver tests **assert** — every test must pass at 100%. Failure blocks the Gol
 
 | Test Class | Tests | Validates |
 |---|---|---|
-| `TestGoldMetricsCompleteness` | 4 | Required columns · composite PK unique (metric_month, supplier_id) · no nulls on key fields · row count ≥ 5 |
-| `TestGoldMetricsKPIBoundaries` | 4 | All 5 KPI numeric bounds in one test · received ≤ ordered + defect ≤ received (combined) · YYYY-MM date format · supplier FK to silver |
+| `TestGoldMetricsCompleteness` | 4 | Required columns · composite PK unique (metric_month, supplier_id) · no nulls · row count ≥ 5 |
+| `TestGoldMetricsKPIBoundaries` | 4 | All 5 KPI numeric bounds · received ≤ ordered + defect ≤ received · YYYY-MM format · supplier FK to silver |
 | `TestGoldMetricsAggregationAccuracy` | 1 | defect_rate_pct = defect_count / total_parts_received × 100 (±0.1%) |
 | `TestGoldMetricsStatistical` | 1 | quality_score cardinality ≥ 2 |
 
@@ -192,13 +207,13 @@ Silver tests **assert** — every test must pass at 100%. Failure blocks the Gol
 
 | Test | Layer Transition | What it validates |
 |---|---|---|
-| `test_row_count_slas` | Bronze → Silver | Silver retains ≥ 90%/85%/94% of bronze rows for suppliers/parts/work orders (3 entities, 1 test) |
-| `test_no_phantom_pks_in_silver` | Bronze → Silver | No PKs in Silver that don't exist in Bronze — suppliers, parts, work orders (3 entities, 1 test) |
+| `test_row_count_slas` | Bronze → Silver | Silver retains ≥ 90%/85%/94% of bronze rows across all 3 entities |
+| `test_no_phantom_pks_in_silver` | Bronze → Silver | No PKs in Silver not present in Bronze — suppliers, parts, work orders |
 | `test_gold_spend_sourced_from_silver_closed_orders` | Silver → Gold | Gold total_spend reconciles to Silver closed order totals within 10% |
 | `test_all_silver_suppliers_with_orders_have_gold_metrics` | Silver → Gold | Every supplier with closed orders in Gold months appears in Gold |
 | `test_gold_defect_counts_non_negative` | Gold | No negative defect counts in the curated layer |
 | `test_gold_month_continuity` | Gold | No gaps > 1 month in the Gold time series |
-| `test_every_gold_supplier_traceable_to_bronze` | Bronze → Gold (lineage) | All Gold supplier_ids trace back to the bronze source — detects injected records |
+| `test_every_gold_supplier_traceable_to_bronze` | Bronze → Gold | All Gold supplier_ids trace back to bronze — detects injected records |
 | `test_work_order_part_ids_traceable_to_bronze_parts` | Bronze lineage | All work order part_ids exist in parts catalog (excluding known orphan PARTXXX) |
 
 ---
@@ -280,4 +295,4 @@ push / pull_request
 
 ## License
 
-MIT — see the repository `LICENSE`
+MIT — see [`LICENSE`](LICENSE)

@@ -44,7 +44,12 @@ scripts targeting Azure Synapse / SQL Server.
 │   ├── bronze/                          33 tests — detects and documents known defects
 │   ├── silver/                          24 tests — hard gate, all must pass
 │   ├── gold/                            10 tests — KPI validation, blocks dashboard refresh
-│   └── integration/                      8 tests — end-to-end pipeline reconciliation
+│   ├── integration/                      8 tests — end-to-end pipeline reconciliation
+│   └── sql/                             40 tests — SQL-first validation via DuckDB
+│       ├── conftest.py                  DuckDB session fixture — loads all 7 CSVs as tables
+│       ├── test_bronze_sql.py           14 tests — completeness and format SQL checks
+│       ├── test_silver_sql.py           16 tests — FK integrity and business rule SQL checks
+│       └── test_gold_sql.py             10 tests — aggregation, KPI boundaries, lineage checks
 ├── reports/
 │   └── full_dq_report.html              Pre-generated HTML test report — open in browser
 ├── .github/workflows/data-quality.yml   GitHub Actions CI pipeline
@@ -83,8 +88,9 @@ make test-bronze      # Bronze gate — 33 tests, intentionally detects dirty da
 make test-silver      # Silver gate — 24 tests, all green (hard pass required)
 make test-gold        # Gold gate  — 10 tests, all green (blocks dashboard refresh)
 make test-integration # E2E reconciliation — 8 tests, all green
+make test-sql         # SQL validation   — 40 tests via DuckDB, no database server required
 
-# Run the full suite (75 tests)
+# Run the full suite (115 tests)
 make test
 
 # Run the live SQL demo (DuckDB — no database server required)
@@ -105,7 +111,7 @@ python3 -m pytest tests/silver/ -m silver       # silver layer only
 python3 -m pytest tests/ --html=report.html     # with HTML report
 ```
 
-## 🧪 Test Suite — 75 Tests
+## 🧪 Test Suite — 115 Tests
 
 **Domain:** Aero parts procurement pipeline · **Target:** Bronze → Silver → Gold medallion layers
 
@@ -215,6 +221,45 @@ Silver tests **assert** — every test must pass at 100%. Failure blocks the Gol
 | `test_gold_month_continuity` | Gold | No gaps > 1 month in the Gold time series |
 | `test_every_gold_supplier_traceable_to_bronze` | Bronze → Gold | All Gold supplier_ids trace back to bronze — detects injected records |
 | `test_work_order_part_ids_traceable_to_bronze_parts` | Bronze lineage | All work order part_ids exist in parts catalog (excluding known orphan PARTXXX) |
+
+---
+
+### 🗄️ SQL Layer — `tests/sql/` — 40 tests
+
+SQL-first validation executed live via DuckDB — the same logic as the T-SQL scripts in `sql/`
+but runnable in CI with no database server. Each test executes a SQL query and asserts on the
+row count returned. Bronze tests allow documented violations; Silver and Gold tests require 0 rows.
+
+**`test_bronze_sql.py`** — 14 tests
+
+| Test Class | Tests | SQL Pattern |
+|---|---|---|
+| `TestBronzeSuppliersSQL` | 6 | NULL PK check · email null rate CTE · `NOT IN` status set · `TRY_STRPTIME` date format · `TRIM()` whitespace · `TRY_CAST` range guard |
+| `TestBronzePartsSQL` | 5 | NULL PK · negative price · blank `part_name` · null `supplier_id` · lead time range |
+| `TestBronzeWorkOrdersSQL` | 3 | NULL PK · CLOSED+null delivery filter · `GROUP BY` status violation count |
+
+**`test_silver_sql.py`** — 16 tests
+
+| Test Class | Tests | SQL Pattern |
+|---|---|---|
+| `TestSilverSuppliersSQL` | 9 | NULL checks · `HAVING COUNT(*) > 1` PK dupe · `TRIM()` whitespace · `NOT IN` categorical · `TRY_STRPTIME` date gate |
+| `TestSilverPartsSQL` | 4 | PK dupe · negative price exclusion · null name check · `LEFT JOIN` orphan detection |
+| `TestSilverWorkOrdersSQL` | 3 | PK dupe · CLOSED delivery completeness · status gate |
+
+**`test_gold_sql.py`** — 10 tests
+
+| Test | SQL Pattern |
+|---|---|
+| `test_composite_pk_unique` | `GROUP BY (metric_month, supplier_id) HAVING COUNT(*) > 1` |
+| `test_no_negative_defect_count` | Direct `< 0` filter |
+| `test_defect_rate_within_bounds` | `< 0 OR > 100` boundary check |
+| `test_delivery_pct_within_bounds` | `< 0 OR > 100` boundary check |
+| `test_parts_received_leq_ordered` | `total_parts_received > total_parts_ordered` |
+| `test_defect_count_leq_parts_received` | `defect_count > total_parts_received` |
+| `test_gold_supplier_fk_to_silver` | `LEFT JOIN silver_suppliers … WHERE s.supplier_id IS NULL` |
+| `test_defect_rate_pct_math_consistency` | `ABS(stored_rate - computed_rate) > 1.0` with inline CTE |
+| `test_total_spend_non_negative` | `total_spend < 0` (zero is valid for months with no closed orders) |
+| `test_quality_score_in_range` | `< 0 OR > 5.0` boundary check |
 
 ---
 

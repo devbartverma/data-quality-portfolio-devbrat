@@ -1,5 +1,5 @@
 .PHONY: install validate-bronze validate-silver validate-gold validate-all \
-        test test-bronze test-silver test-gold test-integration \
+        test test-bronze test-silver test-gold test-integration test-sql \
         ge-validate ge-docs clean reports-dir
 
 PYTHON  := python3
@@ -37,6 +37,12 @@ test-integration: reports-dir
 	$(PYTEST) tests/integration/ -v -m integration \
 		--html=reports/integration_report.html --self-contained-html \
 		--junitxml=reports/integration_junit.xml
+
+test-sql: reports-dir
+	@echo "▶ Running SQL DQ tests (DuckDB — no database server required)..."
+	$(PYTEST) tests/sql/ -v -m sql \
+		--html=reports/sql_report.html --self-contained-html \
+		--junitxml=reports/sql_junit.xml
 
 test: reports-dir
 	@echo "▶ Running full DQ test suite..."

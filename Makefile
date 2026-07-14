@@ -2,9 +2,9 @@
         test test-bronze test-silver test-gold test-integration \
         ge-validate ge-docs clean reports-dir
 
-PYTHON  := python
-PYTEST  := pytest
-PIP     := pip
+PYTHON  := python3
+PYTEST  := python3 -m pytest
+PIP     := pip3
 
 # ── Setup ─────────────────────────────────────────────────────────────
 install:

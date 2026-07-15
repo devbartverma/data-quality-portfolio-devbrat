@@ -50,8 +50,17 @@ scripts targeting Azure Synapse / SQL Server.
 │       ├── test_bronze_sql.py           14 tests — completeness and format SQL checks
 │       ├── test_silver_sql.py           16 tests — FK integrity and business rule SQL checks
 │       └── test_gold_sql.py             10 tests — aggregation, KPI boundaries, lineage checks
+├── self_healing/                        Self-healing DQ engine — detects, classifies, auto-repairs
+│   ├── runner.py                        Runs pytest via subprocess, parses JSON results
+│   ├── classifier.py                    9-rule decision tree: MUST_FAIL vs HEALABLE vs PASS
+│   ├── healer.py                        Calls Claude AI API for infrastructure fix suggestions
+│   ├── fix_applicator.py               Auto-applies safe fixes (pip install only)
+│   ├── engine.py                        Orchestration — up to 3 heal attempts per failure
+│   └── report.py                        Self-contained HTML report + per-test markdown artifacts
+├── run_self_healing.py                  CLI entry — runs engine against any test target
 ├── reports/
-│   └── full_dq_report.html              Pre-generated HTML test report — open in browser
+│   ├── full_dq_report.html              Pre-generated pytest HTML report — open in browser
+│   └── healing/healing_report.html      Pre-generated self-healing run report
 ├── .github/workflows/data-quality.yml   GitHub Actions CI pipeline
 ├── Makefile
 ├── pytest.ini
@@ -62,12 +71,13 @@ scripts targeting Azure Synapse / SQL Server.
 
 - **Python 3.11+** · **pytest 8.3** · **pandas 2.2** · **DuckDB 1.4**
 - **Great Expectations 0.18** — expectation suites, checkpoints, Data Docs
-- **dbt-core 1.7** — schema tests, generic tests, singular SQL tests
+- **dbt-duckdb 1.9** — schema tests, generic tests, singular SQL tests (file-based, no DB server)
 - **T-SQL** — SQL Server 2019 / Azure Synapse Analytics validation scripts
+- **Self-healing engine** — AI-powered infrastructure failure recovery with layer-aware classification
 - **GitHub Actions** — CI pipeline with matrix execution and artifact upload
 
 Defined in [`requirements.txt`](requirements.txt):
-`great-expectations` 0.18 · `dbt-core` 1.7 · `pandas` 2.2 · `pytest` 8.3 · `pytest-html` 4.1 · `duckdb` 1.4
+`great-expectations` 0.18 · `dbt-duckdb` 1.9 · `pandas` 2.2 · `pytest` 8.3 · `pytest-html` 4.1 · `pytest-json-report` 1.5 · `duckdb` 1.4
 
 ## Prerequisites
 
@@ -110,6 +120,24 @@ python3 -m pytest tests/ -v                     # full suite
 python3 -m pytest tests/silver/ -m silver       # silver layer only
 python3 -m pytest tests/ --html=report.html     # with HTML report
 ```
+
+### Self-Healing Engine
+
+```bash
+# Run full suite with self-healing enabled
+make heal
+
+# Run against a specific layer
+make heal-silver
+make heal-bronze
+
+# Or target any path directly
+python3 run_self_healing.py tests/sql/
+python3 run_self_healing.py tests/gold/test_production_metrics.py
+```
+
+Set `ANTHROPIC_API_KEY` to enable AI-powered fix suggestions. Without the key the engine still
+runs — it classifies every failure and produces the report, but skips Claude API calls (dry-heal mode).
 
 ## 🧪 Test Suite — 115 Tests
 
@@ -333,6 +361,63 @@ push / pull_request
 │  on all 5 suites    │   │  no database required    │
 └─────────────────────┘   └─────────────────────────┘
 ```
+
+## Self-Healing DQ Engine
+
+The `self_healing/` module wraps the full pytest suite with an AI-assisted recovery loop.
+When a test fails the engine classifies the failure before deciding whether to attempt repair.
+
+### Classification Rules
+
+The engine uses a strict 9-rule decision tree to determine what to do with each failure:
+
+| Error type | Layer | Decision | Reason |
+|---|---|---|---|
+| `AssertionError` | silver / gold | **MUST_FAIL** | Hard gate — genuine data violation, never suppressed |
+| `AssertionError` | integration | **MUST_FAIL** | E2E reconciliation failure — data pipeline issue |
+| `AssertionError` | bronze | **MUST_FAIL** | Violation above tolerance — documented finding |
+| `AssertionError` | sql | **MUST_FAIL** | SQL assertion fired — live data violation |
+| `FileNotFoundError` | any | **HEALABLE** | Infrastructure — CSV path or working directory issue |
+| `ModuleNotFoundError` | any | **HEALABLE** | Infrastructure — missing pip package |
+| `ImportError` | any | **HEALABLE** | Infrastructure — dependency not installed |
+| `KeyError` / `AttributeError` | any | **HEALABLE** | Infrastructure — column name mismatch or API change |
+| `duckdb.*Error` (non-assertion) | any | **HEALABLE** | Infrastructure — type coercion or CSV format issue |
+
+**The engine will never relax a data quality threshold.** Silver and Gold `AssertionError`s are permanently `MUST_FAIL` regardless of what Claude suggests.
+
+### Healing Loop
+
+```
+Run suite
+    │
+    ├── PASS      → recorded as passed
+    │
+    ├── MUST_FAIL → recorded as must-fail, no healing attempted
+    │               (reports WHY it was left failing)
+    │
+    └── HEALABLE  → for each failure, up to 3 attempts:
+                        1. Call Claude with test source + traceback
+                        2. Claude returns: fix_type, command, safe_to_apply
+                        3. If safe_to_apply and fix_type == pip_install → run pip
+                        4. Re-run the single test
+                        5. If passes → HEALED, stop
+                    After 3 failures → "Claude couldn't do it, check manually."
+```
+
+Auto-applicable fixes are limited to `pip install` commands. Path, column name, and cast fixes
+are suggested and documented but require manual application — the engine never modifies test source files.
+
+### Report
+
+Every run produces:
+
+- `reports/healing/healing_report.html` — self-contained HTML with summary banner and color-coded results table
+- `reports/healing/*-HEALED.md` — markdown artifact for each healed test (original error, fix applied, attempt number)
+- `reports/healing/*-FAILED.md` — markdown artifact for each exhausted test with full attempt log
+
+Must-fail tests (silver/gold AssertionError etc.) produce no artifact — they are expected to remain failed.
+
+---
 
 ## Author
 

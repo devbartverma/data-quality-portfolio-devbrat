@@ -1,6 +1,7 @@
 .PHONY: install validate-bronze validate-silver validate-gold validate-all \
         test test-bronze test-silver test-gold test-integration test-sql \
-        ge-validate ge-docs clean reports-dir
+        ge-validate ge-docs clean reports-dir \
+        heal heal-silver heal-bronze
 
 PYTHON  := python3
 PYTEST  := python3 -m pytest
@@ -106,10 +107,25 @@ dbt-debug:
 	@echo "▶ DBT connection + project check..."
 	$(DBT) debug $(DBTFLAGS)
 
+# ── Self-healing engine ───────────────────────────────────────────────
+heal: reports-dir
+	@mkdir -p reports/healing
+	@echo "▶ Running self-healing DQ engine..."
+	$(PYTHON) run_self_healing.py
+
+heal-silver: reports-dir
+	@mkdir -p reports/healing
+	$(PYTHON) run_self_healing.py tests/silver/
+
+heal-bronze: reports-dir
+	@mkdir -p reports/healing
+	$(PYTHON) run_self_healing.py tests/bronze/
+
 # ── Cleanup ───────────────────────────────────────────────────────────
 clean:
 	@rm -rf reports/ great_expectations/uncommitted/validations/ \
 		    great_expectations/uncommitted/data_docs/ \
 		    dbt/target/ .pytest_cache/ __pycache__/ \
-		    src/__pycache__/ src/**/__pycache__/ tests/**/__pycache__/
+		    src/__pycache__/ src/**/__pycache__/ tests/**/__pycache__/ \
+		    self_healing/__pycache__/
 	@echo "Cleaned."

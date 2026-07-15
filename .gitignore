@@ -17,6 +17,13 @@ dbt/target/
 dbt/logs/
 dbt/dbt_packages/
 dbt/*.duckdb
+dbt/.user.yml
+
+# Self-healing engine — intermediate files
+reports/_healing_raw.json
+reports/healing/*-HEALED.md
+reports/healing/*-FAILED.md
+reports/healing/healing_summary.json
 
 # Great Expectations
 great_expectations/uncommitted/

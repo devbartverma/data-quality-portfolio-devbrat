@@ -11,6 +11,7 @@ dbt-duckdb==1.9.*
 # Testing
 pytest==8.3.*
 pytest-html==4.1.*
+pytest-json-report==1.5.*
 
 # Utilities
 tabulate==0.9.*
